@@ -68,7 +68,7 @@ async function GAMES202Main() {
 
 	// Add Sphere
 	let img = new Image(); // brdfLUT
-	img.src = 'assets/ball/GGX_E_MC_LUT.png';
+	img.src = 'assets/ball/GGX_E_LUT.png';
 	var loadImage = async img => {
 		return new Promise((resolve, reject) => {
 			img.onload = async () => {

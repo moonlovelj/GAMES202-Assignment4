@@ -25,13 +25,33 @@ Vec2f Hammersley(uint32_t i, uint32_t N) {
     return {float(i) / float(N), rdi};
 }
 
+void LocalBasis(Vec3f n, Vec3f& b1, Vec3f& b2) {
+	float sign_ = n.z >= 0.0 ? 1 : -1;
+	float a = -1.0 / (sign_ + n.z);
+	float b = n.x * n.y * a;
+	b1 = Vec3f(1.0 + sign_ * n.x * n.x * a, sign_ * b, -sign_ * n.x);
+	b2 = Vec3f(b, sign_ + n.y * n.y * a, -n.y);
+}
+
 Vec3f ImportanceSampleGGX(Vec2f Xi, Vec3f N, float roughness) {
+	float a = roughness * roughness;
 
-    float a = roughness * roughness;
+	//TODO: in spherical space - Bonus 1
+	float theta = std::atan(a*sqrt(Xi.x)/sqrt(1-Xi.x));
+	float phi = 2.0 * PI * Xi.y;
 
-    // TODO: Copy the code from your previous work - Bonus 1
+	//TODO: from spherical space to cartesian space - Bonus 1
+	float x = sin(theta) * cos(phi);
+	float y = sin(theta) * sin(phi);
+	float z = cos(theta);
 
-    return Vec3f(1.0f);
+	//TODO: tangent coordinates - Bonus 1
+	Vec3f T, B;
+	LocalBasis(N, T, B);
+
+	//TODO: transform H to tangent space - Bonus 1
+
+	return normalize(T*x + B*y + N*z);
 }
 
 
@@ -52,10 +72,10 @@ Vec3f IntegrateEmu(Vec3f V, float roughness, float NdotV, Vec3f Ei) {
         float NoV = std::max(dot(N, V), 0.0f);
 
         // TODO: To calculate Eavg here - Bonus 1
-        
+		Eavg += Ei * NdotV * 2;
     }
 
-    return Vec3f(1.0);
+	return Eavg / sample_count;
 }
 
 void setRGB(int x, int y, float alpha, unsigned char *data) {

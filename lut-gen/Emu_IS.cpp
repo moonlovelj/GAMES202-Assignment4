@@ -23,27 +23,45 @@ Vec2f Hammersley(uint32_t i, uint32_t N) { // 0-1
     return {float(i) / float(N), rdi};
 }
 
+
+void LocalBasis(Vec3f n, Vec3f& b1, Vec3f& b2) {
+	float sign_ = n.z >= 0.0 ? 1 : -1;
+	float a = -1.0 / (sign_ + n.z);
+	float b = n.x * n.y * a;
+	b1 = Vec3f(1.0 + sign_ * n.x * n.x * a, sign_ * b, -sign_ * n.x);
+	b2 = Vec3f(b, sign_ + n.y * n.y * a, -n.y);
+}
+
 Vec3f ImportanceSampleGGX(Vec2f Xi, Vec3f N, float roughness) {
     float a = roughness * roughness;
 
     //TODO: in spherical space - Bonus 1
-
+	float theta = std::atan(a*sqrt(Xi.x)/sqrt(1-Xi.x));
+	float phi = 2.0 * PI * Xi.y;
 
     //TODO: from spherical space to cartesian space - Bonus 1
- 
+	float x = sin(theta) * cos(phi);
+	float y = sin(theta) * sin(phi);
+	float z = cos(theta);
 
     //TODO: tangent coordinates - Bonus 1
-
+	Vec3f T, B;
+	LocalBasis(N, T, B);
 
     //TODO: transform H to tangent space - Bonus 1
     
-    return Vec3f(1.0f);
+    return normalize(T*x + B*y + N*z);
 }
 
 float GeometrySchlickGGX(float NdotV, float roughness) {
     // TODO: To calculate Schlick G1 here - Bonus 1
-    
-    return 1.0f;
+	float a = roughness;
+	float k = (a * a) / 2.0f;
+
+	float nom = NdotV;
+	float denom = NdotV * (1.0f - k) + k;
+
+	return nom / denom;
 }
 
 float GeometrySmith(float roughness, float NoV, float NoL) {
@@ -57,6 +75,9 @@ Vec3f IntegrateBRDF(Vec3f V, float roughness) {
 
     const int sample_count = 1024;
     Vec3f N = Vec3f(0.0, 0.0, 1.0);
+	Vec3f Emu(0.0);
+	//Vec3f R0 = Vec3f(0.7216, 0.451, 0.2);
+	Vec3f R0 = Vec3f(1.0);
     for (int i = 0; i < sample_count; i++) {
         Vec2f Xi = Hammersley(i, sample_count);
         Vec3f H = ImportanceSampleGGX(Xi, N, roughness);
@@ -65,16 +86,19 @@ Vec3f IntegrateBRDF(Vec3f V, float roughness) {
         float NoL = std::max(L.z, 0.0f);
         float NoH = std::max(H.z, 0.0f);
         float VoH = std::max(dot(V, H), 0.0f);
+        float LoH = std::max(dot(L, H), 0.0f);
         float NoV = std::max(dot(N, V), 0.0f);
         
         // TODO: To calculate (fr * ni) / p_o here - Bonus 1
-
+		Vec3f F = R0 + (Vec3f(1.0)-R0)*pow(1.0-VoH, 5.0);
+		float G = GeometrySmith(roughness, NoV, NoL);
+		Emu += F * G * LoH / (NoV*NoH);
 
         // Split Sum - Bonus 2
-        
+
     }
 
-    return Vec3f(1.0f);
+    return Emu / sample_count;
 }
 
 int main() {
