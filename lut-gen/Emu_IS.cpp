@@ -23,7 +23,6 @@ Vec2f Hammersley(uint32_t i, uint32_t N) { // 0-1
     return {float(i) / float(N), rdi};
 }
 
-
 void LocalBasis(Vec3f n, Vec3f& b1, Vec3f& b2) {
 	float sign_ = n.z >= 0.0 ? 1 : -1;
 	float a = -1.0 / (sign_ + n.z);
@@ -78,6 +77,7 @@ Vec3f IntegrateBRDF(Vec3f V, float roughness) {
 	Vec3f Emu(0.0);
 	//Vec3f R0 = Vec3f(0.7216, 0.451, 0.2);
 	Vec3f R0 = Vec3f(1.0);
+	float term1 = 0.0f, term2 = 0.0;
     for (int i = 0; i < sample_count; i++) {
         Vec2f Xi = Hammersley(i, sample_count);
         Vec3f H = ImportanceSampleGGX(Xi, N, roughness);
@@ -90,15 +90,20 @@ Vec3f IntegrateBRDF(Vec3f V, float roughness) {
         float NoV = std::max(dot(N, V), 0.0f);
         
         // TODO: To calculate (fr * ni) / p_o here - Bonus 1
-		Vec3f F = R0 + (Vec3f(1.0)-R0)*pow(1.0-VoH, 5.0);
-		float G = GeometrySmith(roughness, NoV, NoL);
-		Emu += F * G * LoH / (NoV*NoH);
+//		Vec3f F = R0 + (Vec3f(1.0)-R0)*pow(1.0-VoH, 5.0);
+//		float G = GeometrySmith(roughness, NoV, NoL);
+//		Emu += F * G * LoH / (NoV*NoH);
 
         // Split Sum - Bonus 2
-
+        float one_minus_cos5 = pow(1.0-VoH, 5.0);
+		float G = GeometrySmith(roughness, NoV, NoL);
+		float f_F_pdf = G * VoH / (NoH * NoV);
+		term1 += f_F_pdf * (1.0-one_minus_cos5);
+		term2 += f_F_pdf * one_minus_cos5;
     }
 
-    return Emu / sample_count;
+    //return Emu / sample_count;
+    return R0*(term1/sample_count) + Vec3f(term2/sample_count);
 }
 
 int main() {
